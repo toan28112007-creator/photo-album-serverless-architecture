@@ -1,0 +1,2 @@
+# No third-party dependencies beyond boto3, which is provided by the
+# Lambda Python runtime.

@@ -1,0 +1,23 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
+override.tf
+override.tf.json
+.terraform.lock.hcl
+
+# Lambda build artifacts
+src/lambda/**/build/
+__pycache__/
+*.pyc
+
+# Python
+.venv/
+venv/
+.pytest_cache/
+
+# OS
+.DS_Store

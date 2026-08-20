@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  terraform:
+    name: Terraform fmt & validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - name: terraform fmt (check only)
+        working-directory: infrastructure/terraform
+        run: terraform fmt -check -recursive
+
+      - name: terraform init (no backend)
+        working-directory: infrastructure/terraform
+        run: terraform init -backend=false
+
+      - name: terraform validate
+        working-directory: infrastructure/terraform
+        run: terraform validate
+
+  lambda-tests:
+    name: Lambda unit tests
+    runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: ap-southeast-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install boto3 pytest
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
