@@ -25,11 +25,11 @@ resource "aws_cognito_user_pool_client" "app_client" {
     "ALLOW_REFRESH_TOKEN_AUTH",
   ]
 
-  allowed_oauth_flows                 = ["code"]
-  allowed_oauth_scopes                = ["openid", "email", "profile"]
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
   allowed_oauth_flows_user_pool_client = true
-  supported_identity_providers        = ["COGNITO"]
-  callback_urls                       = var.oauth_callback_urls
+  supported_identity_providers         = ["COGNITO"]
+  callback_urls                        = var.oauth_callback_urls
 }
 
 # Default Cognito-hosted domain — not a custom domain, deliberately, since
@@ -68,7 +68,7 @@ resource "aws_apigatewayv2_route" "app_routes" {
   route_key          = "ANY /{proxy+}"
   target             = "integrations/${aws_apigatewayv2_integration.app_api.id}"
   authorization_type = "JWT"
-  authorizer_id       = aws_apigatewayv2_authorizer.cognito.id
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_apigatewayv2_stage" "default" {

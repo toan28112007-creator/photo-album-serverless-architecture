@@ -121,47 +121,47 @@ module "messaging" {
 module "storage" {
   source = "./modules/storage"
 
-  project_name             = var.project_name
-  environment              = var.environment
-  suffix                   = random_id.suffix.hex
-  upload_topic_arn         = module.messaging.topic_arn
-  topic_policy_dependency  = module.messaging.topic_policy
+  project_name            = var.project_name
+  environment             = var.environment
+  suffix                  = random_id.suffix.hex
+  upload_topic_arn        = module.messaging.topic_arn
+  topic_policy_dependency = module.messaging.topic_policy
 }
 
 module "compute" {
   source = "./modules/compute"
 
-  project_name             = var.project_name
-  environment              = var.environment
-  lambda_role_arn          = local.lambda_role_arn
-  image_queue_arn          = module.messaging.image_queue_arn
-  raw_media_bucket_name    = module.storage.raw_media_bucket_name
-  derivatives_bucket_name  = module.storage.derivatives_bucket_name
-  metadata_table_name      = aws_dynamodb_table.metadata.name
-  video_queue_name         = module.messaging.video_queue_url
-  deploy_video_asg         = var.deploy_video_asg
+  project_name            = var.project_name
+  environment             = var.environment
+  lambda_role_arn         = local.lambda_role_arn
+  image_queue_arn         = module.messaging.image_queue_arn
+  raw_media_bucket_name   = module.storage.raw_media_bucket_name
+  derivatives_bucket_name = module.storage.derivatives_bucket_name
+  metadata_table_name     = aws_dynamodb_table.metadata.name
+  video_queue_name        = module.messaging.video_queue_url
+  deploy_video_asg        = var.deploy_video_asg
 }
 
 module "api" {
   source = "./modules/api"
 
-  project_name           = var.project_name
-  environment            = var.environment
-  suffix                 = random_id.suffix.hex
-  aws_region              = var.aws_region
-  app_api_invoke_arn      = module.compute.app_api_invoke_arn
-  app_api_function_name   = module.compute.app_api_function_name
+  project_name          = var.project_name
+  environment           = var.environment
+  suffix                = random_id.suffix.hex
+  aws_region            = var.aws_region
+  app_api_invoke_arn    = module.compute.app_api_invoke_arn
+  app_api_function_name = module.compute.app_api_function_name
 }
 
 module "delivery" {
   source = "./modules/delivery"
 
-  project_name                             = var.project_name
-  environment                              = var.environment
-  frontend_bucket_name                     = module.storage.frontend_bucket_name
-  frontend_bucket_arn                      = "arn:aws:s3:::${module.storage.frontend_bucket_name}"
-  frontend_bucket_regional_domain_name     = "${module.storage.frontend_bucket_name}.s3.${var.aws_region}.amazonaws.com"
-  derivatives_bucket_name                  = module.storage.derivatives_bucket_name
-  derivatives_bucket_arn                   = module.storage.derivatives_bucket_arn
-  derivatives_bucket_regional_domain_name  = "${module.storage.derivatives_bucket_name}.s3.${var.aws_region}.amazonaws.com"
+  project_name                            = var.project_name
+  environment                             = var.environment
+  frontend_bucket_name                    = module.storage.frontend_bucket_name
+  frontend_bucket_arn                     = "arn:aws:s3:::${module.storage.frontend_bucket_name}"
+  frontend_bucket_regional_domain_name    = "${module.storage.frontend_bucket_name}.s3.${var.aws_region}.amazonaws.com"
+  derivatives_bucket_name                 = module.storage.derivatives_bucket_name
+  derivatives_bucket_arn                  = module.storage.derivatives_bucket_arn
+  derivatives_bucket_regional_domain_name = "${module.storage.derivatives_bucket_name}.s3.${var.aws_region}.amazonaws.com"
 }

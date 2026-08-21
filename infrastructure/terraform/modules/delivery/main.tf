@@ -29,8 +29,8 @@ resource "aws_cloudfront_distribution" "this" {
   default_cache_behavior {
     target_origin_id       = "frontend"
     viewer_protocol_policy = "redirect-to-https"
-    allowed_methods         = ["GET", "HEAD"]
-    cached_methods           = ["GET", "HEAD"]
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
 
     forwarded_values {
       query_string = false
@@ -45,11 +45,11 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   ordered_cache_behavior {
-    path_pattern            = "/media/*"
-    target_origin_id        = "derivatives"
-    viewer_protocol_policy  = "redirect-to-https"
-    allowed_methods          = ["GET", "HEAD"]
-    cached_methods            = ["GET", "HEAD"]
+    path_pattern           = "/media/*"
+    target_origin_id       = "derivatives"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
 
     forwarded_values {
       query_string = false

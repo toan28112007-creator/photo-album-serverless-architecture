@@ -26,7 +26,7 @@ resource "aws_sqs_queue" "image_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.image_dlq.arn
-    maxReceiveCount      = 5
+    maxReceiveCount     = 5
   })
 }
 
@@ -36,7 +36,7 @@ resource "aws_sqs_queue" "video_queue" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.video_dlq.arn
-    maxReceiveCount      = 3
+    maxReceiveCount     = 3
   })
 }
 

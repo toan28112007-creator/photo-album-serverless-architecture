@@ -49,8 +49,8 @@ resource "aws_lambda_function" "app_api" {
 
   environment {
     variables = {
-      RAW_MEDIA_BUCKET = var.raw_media_bucket_name
-      METADATA_TABLE   = var.metadata_table_name
+      RAW_MEDIA_BUCKET  = var.raw_media_bucket_name
+      METADATA_TABLE    = var.metadata_table_name
       MAX_VIDEO_SECONDS = "300" # 5-minute cap, see docs/cost-model.md
     }
   }
@@ -64,7 +64,7 @@ resource "aws_lambda_function" "app_api" {
 resource "aws_cloudwatch_metric_alarm" "video_queue_backlog" {
   alarm_name          = "${var.project_name}-video-queue-backlog-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods   = 2
+  evaluation_periods  = 2
   metric_name         = "ApproximateNumberOfMessagesVisible"
   namespace           = "AWS/SQS"
   period              = 60
