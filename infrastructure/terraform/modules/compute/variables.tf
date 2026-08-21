@@ -14,12 +14,12 @@ variable "lambda_role_arn" {
 
 variable "image_processor_zip_path" {
   type    = string
-  default = "../../../src/lambda/image-processor/build/image-processor.zip"
+  default = "../../src/lambda/image-processor/build/image-processor.zip"
 }
 
 variable "app_api_zip_path" {
   type    = string
-  default = "../../../src/lambda/app-api/build/app-api.zip"
+  default = "../../src/lambda/app-api/build/app-api.zip"
 }
 
 variable "image_queue_arn" {

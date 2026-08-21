@@ -49,35 +49,49 @@ full reasoning, including the alternatives considered (MediaConvert, Fargate).
 
 ## What's deployed vs. what's designed
 
-This project was built against an **AWS Academy Learner Lab** account, which
-imposes real constraints on what can be deployed: no custom IAM role
-creation (only a pre-existing `LabRole`), sessions and all resources reset
-periodically, and no real domain/ACM certificate for Route 53. Rather than
-fake a full deployment, this repo is explicit about the split:
+This was first attempted against an **AWS Academy Learner Lab** account, but
+that account's identity (`voclabs`) turned out to be locked down with an
+explicit-deny policy blocking direct API/CLI calls to almost every service
+— `terraform plan` succeeded, but `terraform apply` failed with
+`AccessDeniedException` on every single resource, including basic ones like
+`s3:ListAllMyBuckets`. That's a deliberate course-account restriction, not
+a bug in the Terraform config.
+
+The MVP below was instead deployed and verified against a **personal AWS
+account** (Free/Paid plan, credits-based, ap-southeast-2), using a
+dedicated IAM user rather than root. Rather than only claim this works,
+the table below is backed by actual console screenshots taken right after
+`terraform apply` — see [`docs/deployment-evidence/`](docs/deployment-evidence/).
 
 | Component | Status | Notes |
 |---|---|---|
-| S3 (raw / derivatives / frontend) + event notifications | ✅ Deployed | |
-| SNS fan-out → SQS (image / video / DLQ) | ✅ Deployed | |
-| Lambda — image processing (thumbnail + resize) | ✅ Deployed | |
-| DynamoDB (on-demand) | ✅ Deployed | |
-| API Gateway + Lambda (App API) + Cognito | ✅ Deployed | Default Cognito Hosted UI domain |
+| S3 (raw / derivatives / frontend) + event notifications | ✅ Deployed & verified | 3 buckets confirmed — [screenshot](docs/deployment-evidence/s3-buckets.png) |
+| SNS fan-out → SQS (image / video / DLQ) | ✅ Deployed & verified | 4 queues confirmed — [screenshot](docs/deployment-evidence/sqs-queues.png) |
+| Lambda — App API + image processing | ✅ Deployed & verified | 2 functions confirmed — [screenshot](docs/deployment-evidence/lambda-functions.png) |
+| DynamoDB (on-demand) | ✅ Deployed & verified | Table `Active`, on-demand capacity — [screenshot](docs/deployment-evidence/dynamodb-table.png) |
+| CloudWatch alarm on SQS queue depth | ✅ Deployed & verified | Alarm created — [screenshot](docs/deployment-evidence/cloudwatch-alarm.png) |
+| API Gateway + Cognito | ✅ Deployed | Live endpoint: see `terraform output api_endpoint`; default Cognito Hosted UI domain |
 | CloudFront + Origin Access Control | ✅ Deployed | Default `*.cloudfront.net` domain, no custom Route 53 zone |
-| CloudWatch alarm on SQS queue depth | ✅ Deployed | |
 | EC2 Auto Scaling Group (video transcoding) | 🧩 Designed, not deployed | Terraform module included but not applied — see reasoning below |
 | Route 53 custom domain / failover routing | 🧩 Designed, not deployed | Requires a real hosted domain |
 | AWS WAF (full managed rule groups) | 🧩 Partial | One rate-based rule deployed to demonstrate the concept |
-| AWS Organizations / multi-account | 🧩 Designed only | Out of scope for a Learner Lab account |
+| AWS Organizations / multi-account | 🧩 Designed only | Out of scope for a single personal account |
 
-**Why EC2 transcoding wasn't deployed:** Learner Lab sessions are short-lived
-and reset frequently, which makes a stateful, multi-AZ Auto Scaling Group
-impractical to validate end-to-end in the time available. The Terraform
-module (`infrastructure/terraform/modules/compute`) is written and
+**Why EC2 transcoding wasn't deployed:** it needs a real VPC with private
+subnets, a NAT/VPC-endpoint path, a custom AMI or bootstrap pipeline with
+FFmpeg installed, and a multi-AZ Auto Scaling Group — all things worth
+building deliberately rather than rushing to tick a box, and out of scope
+for validating the core event-driven pipeline. The Terraform module
+(`infrastructure/terraform/modules/compute`) is written and
 `terraform validate`-clean, and `src/lambda/video-worker` documents the
 FFmpeg job logic that would run on each instance, but it has not been
 `apply`-d against a live account. This is stated here rather than implied,
 because knowing *why* something wasn't deployed is as important as
 deploying it.
+
+**Note:** all resources above were destroyed with `terraform destroy` after
+verification, to avoid ongoing cost — this repo reflects what was *proven
+deployable*, not what is currently running.
 
 ---
 
@@ -119,19 +133,33 @@ tests/                      Unit tests for Lambda handlers
 
 ## Deploying this yourself
 
-Requires Terraform ≥ 1.5 and an AWS account (Learner Lab or standard).
+Requires Terraform ≥ 1.5 and an AWS account with an IAM user (not root)
+holding sufficient permissions to create the resources listed above.
 
 ```bash
 cd infrastructure/terraform
+cp terraform.tfvars.example terraform.tfvars   # edit as needed
 terraform init
-terraform plan   -var="environment=dev"
-terraform apply  -var="environment=dev"
+terraform plan
+terraform apply
 ```
 
-On an AWS Academy Learner Lab account, set `use_lab_role = true` in
-`terraform.tfvars` — this skips custom IAM role creation and attaches the
-pre-existing `LabRole` to all Lambda functions instead, since Learner Lab
-accounts cannot create new IAM roles.
+**On a standard/personal AWS account** (how this repo was actually
+verified): set `use_lab_role = false` in `terraform.tfvars` — Terraform
+creates its own least-privilege IAM role for the Lambda functions.
+
+**On an AWS Academy Learner Lab account:** in principle, set
+`use_lab_role = true` and supply `lab_role_arn` to skip custom IAM role
+creation and attach the pre-existing `LabRole` to all Lambda functions
+instead. In practice, some Learner Lab configurations attach an
+explicit-deny policy to the student identity that blocks direct API/CLI
+calls entirely — `terraform plan` will succeed but `apply` will fail with
+`AccessDeniedException` on every resource. If that happens, it's a course
+account restriction, not a configuration problem; see "What's deployed vs.
+designed" above for how this was resolved.
+
+Remember to run `terraform destroy` once you're done verifying, to avoid
+ongoing cost.
 
 ---
 

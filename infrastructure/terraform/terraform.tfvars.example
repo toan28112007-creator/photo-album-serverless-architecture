@@ -7,7 +7,7 @@ environment  = "dev"
 # Set use_lab_role = true and fill in lab_role_arn with the ARN shown
 # under IAM > Roles > LabRole in your Learner Lab account.
 use_lab_role = true
-lab_role_arn = "arn:aws:iam::123456789012:role/LabRole"
+lab_role_arn = "arn:aws:iam::919528947811:role/LabRole"
 
 # Leave false — see README "What's deployed vs. designed".
 deploy_video_asg = false

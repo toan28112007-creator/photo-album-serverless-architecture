@@ -55,6 +55,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw_media" {
   rule {
     id     = "raw-media-tiering"
     status = "Enabled"
+    filter {}
 
     transition {
       days          = 90
