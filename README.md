@@ -114,19 +114,22 @@ Full breakdown, assumptions, and per-service formulas:
 ## Repository structure
 
 ```
-docs/                       Design rationale, cost model, diagrams, original report
-infrastructure/terraform/   IaC, one module per architectural layer
-  modules/storage/          S3 buckets + event notifications
-  modules/messaging/        SNS topic, SQS queues, DLQ
-  modules/compute/          Lambda functions + EC2 ASG (video, not applied)
-  modules/api/               API Gateway + Cognito
-  modules/delivery/         CloudFront + Origin Access Control
-src/lambda/                 Lambda function source code
-  app-api/                  Business logic: albums, pre-signed URL issuance
-  image-processor/          Thumbnail + resize worker
-  video-worker/             FFmpeg transcoding logic (designed, not deployed)
-tests/                      Unit tests for Lambda handlers
-.github/workflows/          CI: terraform validate/fmt, Lambda lint + test
+docs/                          Design rationale, cost model, diagrams, original report
+infrastructure/
+  terraform-bootstrap/         One-time setup: S3 state bucket + DynamoDB lock table
+  terraform/                   Main stack, one module per architectural layer
+    backend.tf                 Remote state config (placeholder until bootstrap is run)
+    modules/storage/           S3 buckets + event notifications
+    modules/messaging/         SNS topic, SQS queues, DLQ
+    modules/compute/           Lambda functions + EC2 ASG (video, not applied)
+    modules/api/                API Gateway + Cognito
+    modules/delivery/          CloudFront + Origin Access Control
+src/lambda/                    Lambda function source code
+  app-api/                     Business logic: albums, pre-signed URL issuance
+  image-processor/             Thumbnail + resize worker
+  video-worker/                FFmpeg transcoding logic (designed, not deployed)
+tests/                         Unit tests for Lambda handlers
+.github/workflows/             CI: terraform validate/fmt, Lambda lint + test
 ```
 
 ---
@@ -136,10 +139,25 @@ tests/                      Unit tests for Lambda handlers
 Requires Terraform ≥ 1.5 and an AWS account with an IAM user (not root)
 holding sufficient permissions to create the resources listed above.
 
+**Step 1 — one-time backend setup.** State is stored remotely in S3 with
+DynamoDB locking rather than as a local file, so it survives a wiped
+laptop and can't be corrupted by two concurrent applies. See
+[`infrastructure/terraform-bootstrap/README.md`](infrastructure/terraform-bootstrap/README.md)
+for the full explanation; the short version:
+
+```bash
+cd infrastructure/terraform-bootstrap
+terraform init
+terraform apply
+# copy the printed backend_config_snippet output into ../terraform/backend.tf
+```
+
+**Step 2 — deploy the main stack:**
+
 ```bash
 cd infrastructure/terraform
 cp terraform.tfvars.example terraform.tfvars   # edit as needed
-terraform init
+terraform init      # detects the new backend, offers to migrate state — answer yes
 terraform plan
 terraform apply
 ```
