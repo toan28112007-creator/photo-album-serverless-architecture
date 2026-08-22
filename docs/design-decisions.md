@@ -146,3 +146,44 @@ original report's comparison tables:
 For the full reasoning behind each of the four comparison pairs (EC2 vs.
 Lambda, Aurora vs. DynamoDB, API Gateway vs. ALB, CloudFormation vs.
 Amplify), see Section IV-G/H of [`report.pdf`](report.pdf).
+
+---
+
+## ADR-7: Remote state — S3 with native locking, via a separate bootstrap stack
+
+**Context.** Terraform state was initially local
+(`infrastructure/terraform/terraform.tfstate`), tracked only on the
+machine that ran `apply`. This doesn't survive a wiped laptop, can't be
+shared with a collaborator, and has no locking — two concurrent
+`terraform apply` runs could corrupt it.
+
+**Decision.** Store state in a versioned, encrypted, private S3 bucket,
+using Terraform's native S3 lock file (`use_lockfile = true`, requires
+Terraform ≥ 1.10) to prevent concurrent writes. The bucket is created by
+a small, separate `terraform-bootstrap` stack rather than the main stack.
+
+**Reasoning for the separate bootstrap stack.** Terraform can't configure
+a backend and create that same backend's storage in one `apply` — the S3
+bucket has to exist before Terraform can point at it as a backend. Rather
+than create it by hand via the console (undocumented, not reproducible),
+`terraform-bootstrap` is itself IaC, just deliberately kept on local
+state since it's small, changes rarely, and breaking the circular
+dependency this way is simpler than any alternative (e.g. a two-phase
+`apply` of the same stack).
+
+**Alternatives considered.** DynamoDB-based locking (`dynamodb_table`
+parameter) — this was the original implementation, and is still the only
+option on Terraform < 1.10; it's a fine choice and functionally
+equivalent, just an extra always-on resource once native S3 locking
+covers the same need. Terraform Cloud/HCP remote backend — offers the
+same locking guarantee with a nicer UI and run history, but requires an
+external account and changes the deployment story from "just AWS" to
+"AWS plus a SaaS dependency," which isn't warranted at this project's
+scale. Local state with manual backup — rejected outright; it's the
+status quo this ADR replaces, and offers no locking at all.
+
+**Trade-off accepted.** One extra one-time setup step
+(`terraform-bootstrap`) before the main stack can be deployed, in
+exchange for state that's durable, shareable, and safe under concurrent
+access — the standard trade every real Terraform project makes past a
+single-person, single-machine prototype.
